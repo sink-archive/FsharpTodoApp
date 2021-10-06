@@ -24,9 +24,12 @@ module TodoList =
     let update (msg: Msg) (state: State) : State =
         match msg with
         | Add ->
-            let todo = { text = state.workingText; complete = false }
-            state.todos.Add(todo)
-            { state with workingText = "" }
+            if state.workingText = "" then
+                state
+            else
+                let todo = { text = state.workingText; complete = false }
+                state.todos.Add(todo)
+                { state with workingText = "" }
         | Remove(i) ->
             let list = state.todos
             let removed =
@@ -64,12 +67,16 @@ module TodoList =
                     TextBox.text state.workingText
                     TextBox.onTextChanged (fun t -> dispatch (SetWorkingText(t)))
                     
+                    TextBox.margin 5.0
+                    
                     Grid.row 1
                 ]
                 
                 Button.create [
                     Button.content "Add"
                     Button.onClick (fun _ -> dispatch Add)
+                    
+                    Button.margin 5.0
                     
                     Grid.row 1
                     Grid.column 1
@@ -79,36 +86,44 @@ module TodoList =
                     Button.content "Clear"
                     Button.onClick (fun _ -> dispatch Clear)
                     
+                    Button.margin 5.0
+                    
                     Grid.row 1
                     Grid.column 2
                 ]
                 
                 // todos are shown by this
-                StackPanel.create [
+                ScrollViewer.create [
                     Grid.columnSpan 3
+                    ScrollViewer.margin 5.0
                     
-                    StackPanel.children (state.todos |> Seq.toList |> List.mapi (fun i t ->
+                    ScrollViewer.content (
                         StackPanel.create [
-                            StackPanel.orientation Orientation.Horizontal
-                            StackPanel.children [
-                                Button.create [
-                                    Button.content "x"
-                                    Button.onClick (fun _ -> dispatch (Remove(i)))
+                            StackPanel.children (state.todos |> Seq.toList |> List.mapi (fun i t ->
+                                StackPanel.create [
+                                    StackPanel.orientation Orientation.Horizontal
+                                    StackPanel.children [
+                                        Button.create [
+                                            Button.content "x"
+                                            Button.onClick (fun _ -> dispatch (Remove(i)))
+                                            Button.margin 5.0
+                                        ]
+                                        CheckBox.create [
+                                            CheckBox.onChecked (fun _ -> dispatch (Check(i)))
+                                            CheckBox.onUnchecked (fun _ -> dispatch (Uncheck(i)))
+                                            CheckBox.isChecked t.complete
+                                            CheckBox.margin 5.0
+                                        ]
+                                        TextBox.create [
+                                            TextBox.text t.text
+                                            TextBox.onTextChanged (fun t -> dispatch (Change(t, i)))
+                                            TextBox.margin 5.0
+                                        ]
+                                    ]
                                 ]
-                                CheckBox.create [
-                                    CheckBox.onChecked (fun _ -> dispatch (Check(i)))
-                                    CheckBox.onUnchecked (fun _ -> dispatch (Uncheck(i)))
-                                    CheckBox.isChecked t.complete
-                                ]
-                                TextBox.create [
-                                    TextBox.text t.text
-                                    TextBox.onTextChanged (fun t -> dispatch (Change(t, i)))
-                                ]
-                            ]
-                        ]
-                        :> IView
-                        ))
-                ]
-                
+                                :> IView
+                                ))
+                        ])
+                    ]
             ]
         ]
